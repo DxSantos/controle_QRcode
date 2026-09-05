@@ -3,6 +3,8 @@ require 'config.php';
 require 'includes/verifica_permissao.php';
 include 'includes/header.php';
 
+/** @var PDO $pdo */
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -44,24 +46,26 @@ if (isset($_GET['editar'])) {
 // =========================
 if (isset($_GET['excluir'])) {
     $id = (int) $_GET['excluir'];
-    $pdo->prepare("DELETE FROM permissoes WHERE id = ?")->execute([$id]);
+    $stmt = $pdo->prepare("DELETE FROM permissoes WHERE id = ?");
+    $stmt->execute([$id]);
     header("Location: permissoes_cadastro.php");
     exit;
 }
 
-// =========================
 // PESQUISA
 // =========================
 $busca = isset($_GET['busca']) ? strtoupper(trim($_GET['busca'])) : '';
+$termo = "%$busca%";
 
 $sql = "SELECT id, nome, chave
         FROM permissoes
-        WHERE UPPER(nome) LIKE :busca OR UPPER(chave) LIKE :busca
+        WHERE UPPER(nome) LIKE ? OR UPPER(chave) LIKE ?
         ORDER BY id DESC";
+
 $stmt = $pdo->prepare($sql);
-$stmt->bindValue(':busca', "%$busca%", PDO::PARAM_STR);
-$stmt->execute();
+$stmt->execute([$termo, $termo]); // Passa o termo para a 1ª e 2ª interrogação
 $permissoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 
 <div class="container py-4 main-container">

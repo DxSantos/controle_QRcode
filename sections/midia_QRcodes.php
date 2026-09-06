@@ -96,7 +96,8 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
                         <thead class="table-light">
                             <tr>
                                 <th>Tipo</th>
-                                <th>Arquivo</th>
+                                <th>Nome Original</th>
+                                <th>Arquivo no Servidor</th>
                                 <th>Preview</th>
                                 <th style="width: 200px;">Ações</th>
                             </tr>
@@ -112,6 +113,10 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
                                         <?php else: ?>
                                             <span class="badge bg-success">Imagem</span>
                                         <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <!-- EXIBIÇÃO DO NOME ORIGINAL DO ARQUIVO -->
+                                        <strong><?= htmlspecialchars($m['nome_original'] ?? 'N/A') ?></strong>
                                     </td>
                                     <td><code><?= htmlspecialchars($m['arquivo']) ?></code></td>
                                     <td>
@@ -161,7 +166,7 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
                                     <div class="modal-dialog modal-dialog-centered modal-lg">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h5 class="modal-title">Visualização - <?= htmlspecialchars($m['arquivo']) ?></h5>
+                                                <h5 class="modal-title">Visualização - <?= htmlspecialchars($m['nome_original'] ?? $m['arquivo']) ?></h5>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                                             </div>
                                             <div class="modal-body text-center bg-light">

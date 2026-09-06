@@ -146,7 +146,7 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
                                             <!-- Botão Modal Editar -->
                                             <button class="btn btn-sm btn-outline-warning"
                                                 data-bs-toggle="modal"
-                                                data-bs-target="#modalEdit<?= $m['id'] ?>">✏️ Editar</button>
+                                                data-bs-target="#modalEdit<?= $m['id'] ?>">✏️ Editar Tipo</button>
 
                                             <!-- Link Excluir -->
                                             <a href="../actions/midia_acoes.php?excluir_midia=<?= $m['id'] ?>&qr_id=<?= $midiaQR_id ?>"

@@ -30,29 +30,23 @@ if (!$midias) {
     exit;
 }
 
-// ==========================================================
-// 4. LÓGICA PARA NÃO REPETIR A MÍDIA RECENTEMENTE TOCADA
-// ==========================================================
+// LÓGICA PARA NÃO REPETIR A MÍDIA RECENTEMENTE TOCADA NA MESMA NAVEGAÇÃO
 if (!isset($_SESSION['historico_midias'][$codigo])) {
     $_SESSION['historico_midias'][$codigo] = [];
 }
 
-// Filtra mídias que ainda não foram exibidas na rodada atual
 $midias_nao_tocadas = array_filter($midias, function($item) use ($codigo) {
     return !in_array($item['id'], $_SESSION['historico_midias'][$codigo]);
 });
 
-// Se todas as mídias já foram tocadas, reinicia o histórico deste QR Code
 if (empty($midias_nao_tocadas)) {
     $_SESSION['historico_midias'][$codigo] = [];
     $midias_nao_tocadas = $midias;
 }
 
-// Reindexa e escolhe uma mídia aleatória dentro das não repetidas
 $midias_nao_tocadas = array_values($midias_nao_tocadas);
 $midia = $midias_nao_tocadas[array_rand($midias_nao_tocadas)];
 
-// Guarda o ID da mídia sorteada no histórico da sessão
 $_SESSION['historico_midias'][$codigo][] = $midia['id'];
 ?>
 
@@ -60,7 +54,6 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<!-- 3. Habilita pinch-to-zoom (zoom com dois dedos) para imagens em dispositivos móveis -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
 <title>Player de Mídia - QR System</title>
 
@@ -83,7 +76,6 @@ video {
     object-fit: cover;
 }
 
-/* CONTAINER DA IMAGEM COM PERMISSÃO DE ZOOM / MANIPULAÇÃO DE PINÇA */
 .image-box {
     display: flex;
     align-items: center;
@@ -111,9 +103,6 @@ video {
     text-align: center;
 }
 
-/* ==========================================================
-   1. OVERLAY DE INÍCIO - CENTRALIZADO COM ÍCONE PLAY LARANJA
-   ========================================================== */
 #overlay {
     position: fixed;
     top: 0;
@@ -159,9 +148,6 @@ video {
     100% { transform: scale(1); }
 }
 
-/* ==========================================================
-   2. BARRA DE CONTROLE FLUTUANTE (PARA ÁUDIO E VÍDEO)
-   ========================================================== */
 #mediaControls {
     position: fixed;
     bottom: 40px;
@@ -304,7 +290,6 @@ video {
 
 <body>
 
-<!-- 1. OVERLAY INICIAL (SÓ REPRODUZ AO CLICAR NA TELA) -->
 <div id="overlay">
     <div class="overlay-content">
         <img src="../assets/images/icons/play_laranja.png" alt="Iniciar Play" class="play-orange-icon">
@@ -316,27 +301,25 @@ video {
 
     <div class="audio-box">
         <h2 class="mb-4">🎵 Reproduzindo Áudio</h2>
-        <audio id="media" loop>
+        <audio id="media">
             <source src="../uploads/<?= htmlspecialchars($midia['arquivo']) ?>">
         </audio>
     </div>
 
 <?php elseif ($midia['tipo'] == 'video'): ?>
 
-    <video id="media" playsinline loop>
+    <video id="media" playsinline>
         <source src="../uploads/<?= htmlspecialchars($midia['arquivo']) ?>">
     </video>
 
 <?php else: ?>
 
-    <!-- 3. CONTAINER DA IMAGEM COM SUPORTE A ZOOM DE PINÇA -->
     <div class="image-box">
         <img src="../uploads/<?= htmlspecialchars($midia['arquivo']) ?>" alt="Imagem vinculada ao QR">
     </div>
 
 <?php endif; ?>
 
-<!-- 2. MESMA BARRA DE CONTROLE PARA ÁUDIO E VÍDEO -->
 <?php if ($midia['tipo'] == 'audio' || $midia['tipo'] == 'video'): ?>
     <div id="mediaControls">
         <div class="progress-container">
@@ -368,7 +351,6 @@ const media = document.getElementById('media');
 const overlay = document.getElementById('overlay');
 const hasMedia = <?= json_encode($midia['tipo'] === 'audio' || $midia['tipo'] === 'video') ?>;
 
-// Elementos dos controles
 const controls = document.getElementById('mediaControls');
 const btnPlayPause = document.getElementById('btnPlayPause');
 const btnRewind = document.getElementById('btnRewind');
@@ -383,7 +365,7 @@ const volumeSlider = document.getElementById('volumeSlider');
 
 let hideTimeout = null;
 
-// 1. INICIAR APENAS AO CLICAR NA TELA
+// INICIAR REPRODUÇÃO AO CLICAR NA TELA
 document.body.addEventListener('click', () => {
     if (overlay.style.display !== 'none') {
         if (media) {
@@ -399,7 +381,6 @@ document.body.addEventListener('click', () => {
     }
 }, { once: true });
 
-// 2. LÓGICA DE CONTROLES COMPARTILHADA PARA ÁUDIO E VÍDEO
 if (hasMedia && media) {
 
     function showControls() {
@@ -409,10 +390,9 @@ if (hasMedia && media) {
             if (!volumePopup.classList.contains('active')) {
                 controls.classList.add('hidden');
             }
-        }, 2000); // Oculta a barra em 2 segundos
+        }, 2000);
     }
 
-    // Exibir/ocultar barra ao tocar na tela
     document.body.addEventListener('click', (e) => {
         if (e.target.closest('#mediaControls') || overlay.style.display !== 'none') {
             return;
@@ -452,7 +432,7 @@ if (hasMedia && media) {
         showControls();
     });
 
-    // Progresso e Tempos
+    // Atualiza progresso e contadores
     media.addEventListener('timeupdate', () => {
         if (!isNaN(media.duration)) {
             const pct = (media.currentTime / media.duration) * 100;
@@ -462,7 +442,14 @@ if (hasMedia && media) {
         }
     });
 
-    // Buscar tempo na barra
+    // REINICIA A MÍDIA AUTOMATICAMENTE AO CHEGAR NO FINAL
+    media.addEventListener('ended', () => {
+        media.currentTime = 0; // Reseta o tempo para o começo
+        media.pause();          // Toca novamente
+        if (btnPlayPause) btnPlayPause.innerHTML = '▶️';
+    });
+
+    // Arrastar/clicar na barra de progresso
     progressWrapper.addEventListener('click', (e) => {
         e.stopPropagation();
         const rect = progressWrapper.getBoundingClientRect();

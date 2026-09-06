@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($user && password_verify($senha, $user['senha'])) {
         $_SESSION['usuario_id'] = $user['id'];
         $_SESSION['usuario_nome'] = $user['nome'];
-        header("Location: ../form_quantidade.php");
+        header("Location: form_principal.php");
         exit;
     } else {
         $erro = 'E-mail ou senha inválidos.';

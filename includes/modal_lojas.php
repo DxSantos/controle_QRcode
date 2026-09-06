@@ -9,7 +9,7 @@
 //     exit;
 // }
 
-require_once 'config.php';
+require_once __DIR__ . '/../config/config.php';
 
 if (empty($_SESSION['loja_id'])):
     // Busca todas as lojas

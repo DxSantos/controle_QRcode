@@ -1,5 +1,8 @@
 <?php
-require '../config.php';
+// Incluindo a conexão/configuração
+require_once __DIR__ . '/../config/config.php';
+
+include_once __DIR__ . '/../includes/header.php';
 
 $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

@@ -1,7 +1,8 @@
 <?php
 date_default_timezone_set('America/Sao_Paulo');
 session_start();
-require '../config.php';
+// Incluindo a conexão/configuração
+require_once __DIR__ . '/../config/config.php';
 
 $erro = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

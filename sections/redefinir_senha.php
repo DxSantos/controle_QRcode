@@ -1,5 +1,6 @@
 <?php
-require '../config.php';
+// Incluindo a conexão/configuração
+require_once __DIR__ . '/../config/config.php';
 
 $token = $_GET['token'] ?? '';
 $msg = '';

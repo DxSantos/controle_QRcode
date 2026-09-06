@@ -2,7 +2,8 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once 'config.php';
+// Incluindo a conexão/configuração
+require_once __DIR__ . '/../config/config.php';
 
 /**
  * Verifica se o usuário logado possui uma permissão específica

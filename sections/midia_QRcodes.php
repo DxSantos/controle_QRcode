@@ -57,7 +57,7 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
 
                 <div class="col-md-3">
                     <label class="form-label fw-bold">Tipo de Mídia</label>
-                    <select name="grupo" class="form-select" required>
+                    <select name="grupo" id="selectTipoMidia" class="form-select" required onchange="toggleCampoLetra(this.value)">
                         <option value="audio">Áudio</option>
                         <option value="video">Vídeo</option>
                         <option value="imagem">Imagem</option>
@@ -67,6 +67,21 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
                 <div class="col-md-6">
                     <label class="form-label fw-bold">Arquivo</label>
                     <input type="file" name="arquivo" class="form-control" required>
+                </div>
+
+                <!-- CAMPO OPCIONAL PARA LETRA DO ÁUDIO -->
+                <div class="col-12" id="campoLetraAudio">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label fw-bold mb-0">Letra do Áudio <small class="text-muted fw-normal">(Opcional)</small></label>
+
+                        <!-- Botão para disparar a busca automática -->
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="buscarLetraAutomatica()">
+                            🔍 Buscar Letra na Web
+                        </button>
+                    </div>
+
+                    <textarea style="height: max-content;" name="letra_audio" id="inputLetraAudio" class="form-control" rows="4" placeholder="Digite ou clique no botão acima para buscar a letra automaticamente..."></textarea>
+                    <div id="statusBuscaLetra" class="form-text"></div>
                 </div>
             </div>
 
@@ -97,7 +112,7 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
                             <tr>
                                 <th>Tipo</th>
                                 <th>Nome Original</th>
-                                <th>Arquivo no Servidor</th>
+                                <th>Letra</th>
                                 <th>Preview</th>
                                 <th style="width: 200px;">Ações</th>
                             </tr>
@@ -115,18 +130,30 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <!-- EXIBIÇÃO DO NOME ORIGINAL DO ARQUIVO -->
-                                        <strong><?= htmlspecialchars($m['nome_original'] ?? 'N/A') ?></strong>
+                                        <strong><?= htmlspecialchars($m['nome_original'] ?? $m['arquivo']) ?></strong>
                                     </td>
-                                    <td><code><?= htmlspecialchars($m['arquivo']) ?></code></td>
+                                    <td>
+                                        <!-- EXIBIÇÃO / VISUALIZAÇÃO DA LETRA -->
+                                        <?php if ($m['tipo'] == 'audio' && !empty($m['letra_audio'])): ?>
+                                            <button class="btn btn-sm btn-outline-info"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalLetra<?= $m['id'] ?>">
+                                                📄 Ver Letra
+                                            </button>
+                                        <?php elseif ($m['tipo'] == 'audio'): ?>
+                                            <span class="text-muted small">Sem letra</span>
+                                        <?php else: ?>
+                                            <span class="text-muted small">N/A</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td>
                                         <!-- PRÉVIA DIRETA CLICÁVEL QUE DISPARA O MODAL -->
-                                        <div class="preview-trigger" 
-                                             data-bs-toggle="modal" 
-                                             data-bs-target="#modalPreview<?= $m['id'] ?>" 
-                                             style="cursor: pointer;"
-                                             title="Clique para ampliar/reproduzir">
-                                            
+                                        <div class="preview-trigger"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalPreview<?= $m['id'] ?>"
+                                            style="cursor: pointer;"
+                                            title="Clique para ampliar/reproduzir">
+
                                             <?php if ($m['tipo'] == 'audio'): ?>
                                                 <audio controls style="max-width: 220px; height: 35px; pointer-events: none;">
                                                     <source src="../uploads/<?= htmlspecialchars($m['arquivo']) ?>">
@@ -136,22 +163,21 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
                                                     <source src="../uploads/<?= htmlspecialchars($m['arquivo']) ?>">
                                                 </video>
                                             <?php else: ?>
-                                                <img src="../uploads/<?= htmlspecialchars($m['arquivo']) ?>" 
-                                                     alt="Preview" 
-                                                     width="80" 
-                                                     height="60" 
-                                                     class="img-thumbnail"
-                                                     style="object-fit: cover;">
+                                                <img src="../uploads/<?= htmlspecialchars($m['arquivo']) ?>"
+                                                    alt="Preview"
+                                                    width="80"
+                                                    height="60"
+                                                    class="img-thumbnail"
+                                                    style="object-fit: cover;">
                                             <?php endif; ?>
                                         </div>
                                     </td>
                                     <td>
-                                        <!-- CONTAINER DOS BOTÕES COM LAYOUT LADO A LADO E 10PX DE ESPAÇAMENTO -->
                                         <div class="d-flex align-items-center gap-2" style="gap: 10px;">
                                             <!-- Botão Modal Editar -->
                                             <button class="btn btn-sm btn-outline-warning"
                                                 data-bs-toggle="modal"
-                                                data-bs-target="#modalEdit<?= $m['id'] ?>">✏️ Editar Tipo</button>
+                                                data-bs-target="#modalEdit<?= $m['id'] ?>">✏️ Editar</button>
 
                                             <!-- Link Excluir -->
                                             <a href="../actions/midia_acoes.php?excluir_midia=<?= $m['id'] ?>&qr_id=<?= $midiaQR_id ?>"
@@ -161,7 +187,7 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
                                     </td>
                                 </tr>
 
-                                <!-- 🔍 MODAL DE PREVIEW DA MÍDIA (CENTRALIZADO) -->
+                                <!-- 🔍 MODAL DE PREVIEW DA MÍDIA -->
                                 <div class="modal fade modal-preview-midia" id="modalPreview<?= $m['id'] ?>" tabindex="-1" aria-hidden="true">
                                     <div class="modal-dialog modal-dialog-centered modal-lg">
                                         <div class="modal-content">
@@ -183,10 +209,10 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
                                                         </video>
                                                     </div>
                                                 <?php else: ?>
-                                                    <img src="../uploads/<?= htmlspecialchars($m['arquivo']) ?>" 
-                                                         alt="Preview do arquivo" 
-                                                         class="img-fluid rounded shadow-sm" 
-                                                         style="max-height: 70vh; object-fit: contain;">
+                                                    <img src="../uploads/<?= htmlspecialchars($m['arquivo']) ?>"
+                                                        alt="Preview do arquivo"
+                                                        class="img-fluid rounded shadow-sm"
+                                                        style="max-height: 70vh; object-fit: contain;">
                                                 <?php endif; ?>
                                             </div>
                                             <div class="modal-footer">
@@ -196,7 +222,29 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
                                     </div>
                                 </div>
 
-                                <!-- ✏️ MODAL EDIÇÃO -->
+                                <!-- 📄 MODAL PARA VISUALIZAR A LETRA DO ÁUDIO -->
+                                <?php if (!empty($m['letra_audio'])): ?>
+                                    <div class="modal fade" id="modalLetra<?= $m['id'] ?>" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Letra: <?= htmlspecialchars($m['nome_original'] ?? $m['arquivo']) ?></h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="p-3 bg-light border rounded text-start" style="white-space: pre-wrap; max-height: 350px; overflow-y: auto;">
+                                                        <?= htmlspecialchars($m['letra_audio']) ?>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+
+                                <!-- ✏️ MODAL EDIÇÃO (INCLUI CAMPO DA LETRA) -->
                                 <div class="modal fade" id="modalEdit<?= $m['id'] ?>" tabindex="-1" aria-hidden="true">
                                     <div class="modal-dialog modal-dialog-centered">
                                         <div class="modal-content">
@@ -210,12 +258,19 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
                                                     <input type="hidden" name="midia_id" value="<?= $m['id'] ?>">
                                                     <input type="hidden" name="qr_id" value="<?= $midiaQR_id ?>">
 
-                                                    <label class="form-label fw-bold">Tipo</label>
-                                                    <select name="tipo" class="form-select" required>
-                                                        <option value="audio" <?= $m['tipo'] == 'audio' ? 'selected' : '' ?>>Áudio</option>
-                                                        <option value="video" <?= $m['tipo'] == 'video' ? 'selected' : '' ?>>Vídeo</option>
-                                                        <option value="imagem" <?= $m['tipo'] == 'imagem' ? 'selected' : '' ?>>Imagem</option>
-                                                    </select>
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-bold">Tipo</label>
+                                                        <select name="tipo" class="form-select" required>
+                                                            <option value="audio" <?= $m['tipo'] == 'audio' ? 'selected' : '' ?>>Áudio</option>
+                                                            <option value="video" <?= $m['tipo'] == 'video' ? 'selected' : '' ?>>Vídeo</option>
+                                                            <option value="imagem" <?= $m['tipo'] == 'imagem' ? 'selected' : '' ?>>Imagem</option>
+                                                        </select>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-bold">Letra do Áudio <small class="text-muted fw-normal">(Opcional)</small></label>
+                                                        <textarea name="letra_audio" class="form-control" rows="4"><?= htmlspecialchars($m['letra_audio'] ?? '') ?></textarea>
+                                                    </div>
                                                 </div>
                                                 <div class="modal-footer d-flex gap-2" style="gap: 10px;">
                                                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -248,11 +303,27 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
         }
     }
 
-    // PAUSA O ÁUDIO/VÍDEO QUANDO O MODAL DE PREVIEW FOR FECHADO
+    // Alterna a exibição do campo de letra do áudio
+    function toggleCampoLetra(tipo) {
+        const campo = document.getElementById('campoLetraAudio');
+        if (tipo === 'audio') {
+            campo.style.display = 'block';
+        } else {
+            campo.style.display = 'none';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+        // Inicializa estado do campo de letra no carregamento
+        const selectTipo = document.getElementById('selectTipoMidia');
+        if (selectTipo) {
+            toggleCampoLetra(selectTipo.value);
+        }
+
+        // Pausa o áudio/vídeo quando o modal de preview for fechado
         const modalsPreview = document.querySelectorAll('.modal-preview-midia');
         modalsPreview.forEach(function(modal) {
-            modal.addEventListener('hidden.bs.modal', function () {
+            modal.addEventListener('hidden.bs.modal', function() {
                 const mediaElements = modal.querySelectorAll('audio, video');
                 mediaElements.forEach(function(media) {
                     media.pause();
@@ -260,6 +331,46 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
             });
         });
     });
+
+    async function buscarLetraAutomatica() {
+        const fileInput = document.querySelector('input[name="arquivo"]');
+        const campoLetra = document.getElementById('inputLetraAudio');
+        const statusMsg = document.getElementById('statusBuscaLetra');
+
+        if (!fileInput.files || fileInput.files.length === 0) {
+            alert('Por favor, selecione primeiro um arquivo de áudio.');
+            return;
+        }
+
+        // Pega o nome do arquivo com extensão (ex: "Legiao Urbana - Tempo Perdido.mp3")[cite: 1]
+        const nomeArquivo = fileInput.files[0].name;
+
+        statusMsg.innerHTML = '<span class="text-info">🤖 Processando o nome do arquivo e buscando a letra via IA...</span>';
+
+        try {
+            const response = await fetch('../actions/buscar_letra_ia.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    nome_arquivo: nomeArquivo
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.sucesso) {
+                campoLetra.value = data.letra;
+                statusMsg.innerHTML = '<span class="text-success">✅ Letra encontrada e preenchida com sucesso!</span>';
+            } else {
+                statusMsg.innerHTML = `<span class="text-warning">⚠️ ${data.mensagem}</span>`;
+            }
+        } catch (error) {
+            console.error('Erro na requisição:', error);
+            statusMsg.innerHTML = '<span class="text-danger">❌ Ocorreu um erro ao conectar com o serviço de busca por IA.</span>';
+        }
+    }
 </script>
 
 <?php include_once __DIR__ . '/../includes/footer.php'; ?>

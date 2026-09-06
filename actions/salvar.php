@@ -60,12 +60,15 @@ if (!is_dir($pasta_uploads)) {
 $arquivo = uniqid() . "." . $ext;
 move_uploaded_file($_FILES['arquivo']['tmp_name'], $pasta_uploads . $arquivo);
 
-// Inserir registro na tabela 'midias' salvando o nome do arquivo gerado e o nome_original
+// Captura a letra do áudio, se fornecida
+$letra_audio = $_POST['letra_audio'] ?? null;
+
+// Insere no banco com o novo campo
 $stmt = $pdo->prepare("
-    INSERT INTO midias (midiaQR_id, tipo, arquivo, nome_original) 
-    VALUES (?, ?, ?, ?)
+    INSERT INTO midias (midiaQR_id, tipo, arquivo, nome_original, letra_audio) 
+    VALUES (?, ?, ?, ?, ?)
 ");
-$stmt->execute([$midiaQR_id, $tipo, $arquivo, $nome_original]);
+$stmt->execute([$midiaQR_id, $tipo, $arquivo, $nome_original, $letra_audio]);
 
 // Redireciona de volta para a view com o QR Code selecionado
 header("Location: ../sections/midia_QRcodes.php?midiaQR_id=" . $midiaQR_id);

@@ -98,10 +98,36 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             height: 100vh;
             width: 100%;
             text-align: center;
+            padding-top: 40px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* EFEITO DE ROLAGEM DA LETRA EM TEMPO REAL */
+        .lyrics-container {
+            width: 90%;
+            max-width: 600px;
+            height: 75vh;
+            overflow: hidden;
+            margin-top: 20px;
+            position: relative;
+            mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+        }
+
+        .lyrics-content {
+            font-size: 20px;
+            line-height: 1.8;
+            color: #ffc107;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+            white-space: pre-line;
+            transition: transform 0.9s ease-out;
+            padding-top: 75vh;
+            padding-bottom: 25vh;
         }
 
         #overlay {
@@ -144,17 +170,9 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
         }
 
         @keyframes pulsePlay {
-            0% {
-                transform: scale(1);
-            }
-
-            50% {
-                transform: scale(1.1);
-            }
-
-            100% {
-                transform: scale(1);
-            }
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
         }
 
         #mediaControls {
@@ -226,7 +244,7 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
         }
 
         .btn-ctrl {
-            background: rgba(255, 255, 255, 0.35);
+            background: rgba(0, 0, 0, 0.5);
             border: none;
             color: white;
             border-radius: 50%;
@@ -252,7 +270,7 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
             width: 60px;
             height: 60px;
             font-size: 26px;
-            background: rgba(255, 255, 255, 0.5);
+            background: rgba(0, 0, 0, 0.5);
         }
 
         .btn-audio-toggle {
@@ -301,25 +319,27 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
 
     <div id="overlay">
         <div class="overlay-content">
-            <!-- nome original da mídia sem a extensão e letras grandes-->
             <h2 class="mb-4"><?= htmlspecialchars(pathinfo($midia['nome_original'], PATHINFO_FILENAME)) ?></h2>
-
             <img src="../assets/images/icons/play_laranja.png" alt="Iniciar Play" class="play-orange-icon">
             <p>Toque em qualquer lugar para reproduzir</p>
-
         </div>
     </div>
 
     <?php if ($midia['tipo'] == 'audio'): ?>
 
         <div class="audio-box">
-            <!-- nome original da mídia sem a extensão e letras grandes -->
-             <p style="font-size: 24px; font-weight: bold;"><?= htmlspecialchars(pathinfo($midia['nome_original'], PATHINFO_FILENAME)) ?></p>
+            <p style="font-size: 24px; font-weight: bold; margin-bottom: 5px;"><?= htmlspecialchars(pathinfo($midia['nome_original'], PATHINFO_FILENAME)) ?></p>
 
-            <h2 class="mb-4">🎵 Reproduzindo Áudio</h2>
             <audio id="media">
                 <source src="../uploads/<?= htmlspecialchars($midia['arquivo']) ?>">
             </audio>
+
+            <!-- CAIXA DA LETRA COM SCROLL AUTOMÁTICO -->
+            <?php if (!empty($midia['letra_audio'])): ?>
+                <div class="lyrics-container">
+                    <div class="lyrics-content" id="lyricsContent"><?= htmlspecialchars($midia['letra_audio']) ?></div>
+                </div>
+            <?php endif; ?>
         </div>
 
     <?php elseif ($midia['tipo'] == 'video'): ?>
@@ -349,9 +369,9 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
             </div>
 
             <div class="buttons-row">
-                <button class="btn-ctrl btn-small" id="btnRewind" title="Voltar 10s">⏪</button>
-                <button class="btn-ctrl btn-main" id="btnPlayPause">▶️</button>
-                <button class="btn-ctrl btn-small" id="btnForward" title="Avançar 10s">⏩</button>
+                <button class="btn-ctrl btn-small" id="btnRewind" title="Voltar 10s"><img width="48" height="48" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/rewind.png" alt="rewind"/></button>
+                <button class="btn-ctrl btn-main" id="btnPlayPause"><img width="48" height="48" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/play--v1.png" alt="play--v1"/></button>
+                <button class="btn-ctrl btn-small" id="btnForward" title="Avançar 10s"><img width="48" height="48" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/fast-forward.png" alt="fast-forward"/></button>
                 <button class="btn-audio-toggle" id="btnAudioToggle" title="Volume">🔊</button>
 
                 <div class="volume-popup" id="volumePopup">
@@ -378,6 +398,7 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
         const btnAudioToggle = document.getElementById('btnAudioToggle');
         const volumePopup = document.getElementById('volumePopup');
         const volumeSlider = document.getElementById('volumeSlider');
+        const lyricsContent = document.getElementById('lyricsContent');
 
         let hideTimeout = null;
 
@@ -387,7 +408,7 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
                 if (media) {
                     media.muted = false;
                     media.play();
-                    if (btnPlayPause) btnPlayPause.innerHTML = '⏸️';
+                    if (btnPlayPause) btnPlayPause.innerHTML = '<img width="48" height="48" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/pause--v1.png" alt="pause--v1"/>';
                 }
                 if (document.documentElement.requestFullscreen) {
                     document.documentElement.requestFullscreen().catch(() => {});
@@ -395,9 +416,7 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
                 overlay.style.display = 'none';
                 if (hasMedia) showControls();
             }
-        }, {
-            once: true
-        });
+        }, { once: true });
 
         if (hasMedia && media) {
 
@@ -429,10 +448,10 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
                 e.stopPropagation();
                 if (media.paused) {
                     media.play();
-                    btnPlayPause.innerHTML = '⏸️';
+                    btnPlayPause.innerHTML = '<img width="48" height="48" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/pause--v1.png" alt="pause--v1"/>';
                 } else {
                     media.pause();
-                    btnPlayPause.innerHTML = '▶️';
+                    btnPlayPause.innerHTML = '<img width="48" height="48" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/play--v1.png" alt="play--v1"/>';
                 }
                 showControls();
             });
@@ -450,21 +469,29 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
                 showControls();
             });
 
-            // Atualiza progresso e contadores
+            // Atualiza progresso, contadores e rolagem da letra
             media.addEventListener('timeupdate', () => {
-                if (!isNaN(media.duration)) {
-                    const pct = (media.currentTime / media.duration) * 100;
-                    progressFill.style.width = `${pct}%`;
+                if (!isNaN(media.duration) && media.duration > 0) {
+                    const pct = (media.currentTime / media.duration);
+                    progressFill.style.width = `${pct * 100}%`;
                     currentTimeEl.innerText = formatTime(media.currentTime);
                     totalTimeEl.innerText = formatTime(media.duration);
+
+                    // ROLAGEM SUAVE DA LETRA EM TEMPO REAL
+                    if (lyricsContent) {
+                        const totalHeight = lyricsContent.scrollHeight;
+                        const offset = pct * totalHeight;
+                        lyricsContent.style.transform = `translateY(-${offset}px)`;
+                    }
                 }
             });
 
             // REINICIA A MÍDIA AUTOMATICAMENTE AO CHEGAR NO FINAL
             media.addEventListener('ended', () => {
-                media.currentTime = 0; // Reseta o tempo para o começo
-                media.pause(); // Toca novamente
-                if (btnPlayPause) btnPlayPause.innerHTML = '▶️';
+                media.currentTime = 0;
+                media.pause();
+                if (btnPlayPause) btnPlayPause.innerHTML = '<img width="48" height="48" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/play--v1.png" alt="play--v1"/>';
+                if (lyricsContent) lyricsContent.style.transform = 'translateY(0px)';
             });
 
             // Arrastar/clicar na barra de progresso

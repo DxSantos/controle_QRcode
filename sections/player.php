@@ -401,6 +401,77 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
         const lyricsContent = document.getElementById('lyricsContent');
 
         let hideTimeout = null;
+        let wakeLock = null;
+        let wakeLockInterval = null;
+
+        // TRUQUE PARA MOBILE: MANTÉM UM CANVAS EM LOOP SE FOR ÁUDIO PARA EVITAR APAGAR A TELA
+        let dummyVideo = null;
+        function enableNoSleepVideo() {
+            if (!dummyVideo && <?= json_encode($midia['tipo'] === 'audio') ?>) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1;
+                canvas.height = 1;
+                const ctx = canvas.getContext('2d');
+                ctx.fillRect(0, 0, 1, 1);
+                
+                dummyVideo = document.createElement('video');
+                dummyVideo.setAttribute('playsinline', '');
+                dummyVideo.setAttribute('aria-hidden', 'true');
+                dummyVideo.style.position = 'fixed';
+                dummyVideo.style.opacity = '0.001';
+                dummyVideo.style.pointerEvents = 'none';
+                dummyVideo.srcObject = canvas.captureStream(1);
+                document.body.appendChild(dummyVideo);
+            }
+            if (dummyVideo) {
+                dummyVideo.play().catch(() => {});
+            }
+        }
+
+        function disableNoSleepVideo() {
+            if (dummyVideo) {
+                dummyVideo.pause();
+            }
+        }
+
+        // GERENCIAMENTO DA TELA ACESA (Wake Lock Native + Loop Security)
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                } catch (err) {
+                    console.log('Wake Lock Error:', err);
+                }
+            }
+            enableNoSleepVideo();
+        }
+
+        function releaseWakeLock() {
+            if (wakeLock !== null) {
+                wakeLock.release().then(() => {
+                    wakeLock = null;
+                });
+            }
+            disableNoSleepVideo();
+            if (wakeLockInterval) clearInterval(wakeLockInterval);
+        }
+
+        // Se o Android revogar o bloqueio, tenta forçar a reativação a cada 15 segundos
+        function startWakeLockKeeper() {
+            requestWakeLock();
+            if (wakeLockInterval) clearInterval(wakeLockInterval);
+            wakeLockInterval = setInterval(() => {
+                if (media && !media.paused) {
+                    requestWakeLock();
+                }
+            }, 15000);
+        }
+
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible' && media && !media.paused) {
+                startWakeLockKeeper();
+            }
+        });
 
         // INICIAR REPRODUÇÃO AO CLICAR NA TELA
         document.body.addEventListener('click', () => {
@@ -408,6 +479,7 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
                 if (media) {
                     media.muted = false;
                     media.play();
+                    startWakeLockKeeper();
                     if (btnPlayPause) btnPlayPause.innerHTML = '<img width="48" height="48" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/pause--v1.png" alt="pause--v1"/>';
                 }
                 if (document.documentElement.requestFullscreen) {
@@ -448,9 +520,11 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
                 e.stopPropagation();
                 if (media.paused) {
                     media.play();
+                    startWakeLockKeeper();
                     btnPlayPause.innerHTML = '<img width="48" height="48" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/pause--v1.png" alt="pause--v1"/>';
                 } else {
                     media.pause();
+                    releaseWakeLock();
                     btnPlayPause.innerHTML = '<img width="48" height="48" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/play--v1.png" alt="play--v1"/>';
                 }
                 showControls();
@@ -486,8 +560,9 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
                 }
             });
 
-            // REINICIA A MÍDIA AUTOMATICAMENTE AO CHEGAR NO FINAL
+            // REINICIA A MÍDIA AUTOMATICAMENTE AO CHEGAR NO FINAL E LIBERA A TELA
             media.addEventListener('ended', () => {
+                releaseWakeLock();
                 media.currentTime = 0;
                 media.pause();
                 if (btnPlayPause) btnPlayPause.innerHTML = '<img width="48" height="48" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/play--v1.png" alt="play--v1"/>';

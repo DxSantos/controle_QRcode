@@ -183,9 +183,11 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
                                             <a href="../actions/midia_acoes.php?excluir_midia=<?= $m['id'] ?>&qr_id=<?= $midiaQR_id ?>"
                                                 class="btn btn-sm btn-outline-danger"
                                                 onclick="return confirm('Deseja remover esta mídia?')">🗑️ Excluir</a>
-                                        </div>
-                                    </td>
-                                </tr>
+                                                
+                                        </div>                                       
+                                    </td>                                    
+                                    
+                                </tr>                               
 
                                 <!-- 🔍 MODAL DE PREVIEW DA MÍDIA -->
                                 <div class="modal fade modal-preview-midia" id="modalPreview<?= $m['id'] ?>" tabindex="-1" aria-hidden="true">
@@ -275,11 +277,11 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
                                                 <div class="modal-footer d-flex gap-2" style="gap: 10px;">
                                                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                                                     <button type="submit" class="btn btn-outline-success">Salvar Alterações</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
+                                                </div>                                                
+                                            </form>                                            
+                                        </div>                                        
+                                    </div>                                    
+                                </div>                                                               
 
                             <?php endforeach; ?>
                         </tbody>

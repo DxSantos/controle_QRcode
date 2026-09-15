@@ -238,13 +238,13 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
             position: relative;
             width: 100%;
         }
 
         .btn-ctrl {
-            background: rgba(0, 0, 0, 0.5);
+            background: transparent;
             border: none;
             color: white;
             border-radius: 50%;
@@ -253,7 +253,7 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
             align-items: center;
             justify-content: center;
             backdrop-filter: blur(5px);
-            transition: transform 0.2s, background 0.2s;
+            transition: transform 0.2s;
         }
 
         .btn-ctrl:active {
@@ -263,29 +263,38 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
         .btn-small {
             width: 45px;
             height: 45px;
-            font-size: 18px;
         }
 
         .btn-main {
             width: 60px;
             height: 60px;
-            font-size: 26px;
-            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-audio-toggle,
+        .btn-fullscreen-toggle {
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
         }
 
         .btn-audio-toggle {
             position: absolute;
-            right: 10px;
-            background: transparent;
-            border: none;
-            color: white;
-            font-size: 22px;
-            cursor: pointer;
+            right: 40px;
+        }
+
+        .btn-fullscreen-toggle {
+            position: absolute;
+            right: 0px;
         }
 
         .volume-popup {
             position: absolute;
-            right: 5px;
+            right: 35px;
             bottom: 60px;
             background: rgba(30, 30, 30, 0.9);
             padding: 15px 10px;
@@ -372,11 +381,16 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
                 <button class="btn-ctrl btn-small" id="btnRewind" title="Voltar 10s"><img width="48" height="48" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/rewind.png" alt="rewind"/></button>
                 <button class="btn-ctrl btn-main" id="btnPlayPause"><img width="48" height="48" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/play--v1.png" alt="play--v1"/></button>
                 <button class="btn-ctrl btn-small" id="btnForward" title="Avançar 10s"><img width="48" height="48" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/fast-forward.png" alt="fast-forward"/></button>
-                <button class="btn-audio-toggle" id="btnAudioToggle" title="Volume">🔊</button>
+                
+                <!-- Botão de Áudio -->
+                <button class="btn-audio-toggle" id="btnAudioToggle" title="Volume"><img width="30" height="30" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/high-volume.png" alt="volume"/></button>
+
+                <!-- Botão Girar Tela / Fullscreen -->
+                <button class="btn-fullscreen-toggle" id="btnFullscreenToggle" title="Girar / Tela Cheia"><img width="30" height="30" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/full-screen.png" alt="full-screen"/></button>
 
                 <div class="volume-popup" id="volumePopup">
                     <input type="range" class="volume-slider-vertical" id="volumeSlider" min="0" max="1" step="0.05" value="1">
-                    <span>🔊</span>
+                    <img width="24" height="24" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/high-volume.png" alt="volume"/>
                 </div>
             </div>
         </div>
@@ -396,6 +410,7 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
         const currentTimeEl = document.getElementById('currentTime');
         const totalTimeEl = document.getElementById('totalTime');
         const btnAudioToggle = document.getElementById('btnAudioToggle');
+        const btnFullscreenToggle = document.getElementById('btnFullscreenToggle');
         const volumePopup = document.getElementById('volumePopup');
         const volumeSlider = document.getElementById('volumeSlider');
         const lyricsContent = document.getElementById('lyricsContent');
@@ -434,7 +449,7 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
             }
         }
 
-        // GERENCIAMENTO DA TELA ACESA (Wake Lock Native + Loop Security)
+        // GERENCIAMENTO DA TELA ACESA
         async function requestWakeLock() {
             if ('wakeLock' in navigator) {
                 try {
@@ -456,7 +471,6 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
             if (wakeLockInterval) clearInterval(wakeLockInterval);
         }
 
-        // Se o Android revogar o bloqueio, tenta forçar a reativação a cada 15 segundos
         function startWakeLockKeeper() {
             requestWakeLock();
             if (wakeLockInterval) clearInterval(wakeLockInterval);
@@ -481,9 +495,6 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
                     media.play();
                     startWakeLockKeeper();
                     if (btnPlayPause) btnPlayPause.innerHTML = '<img width="48" height="48" src="https://img.icons8.com/fluency-systems-regular/48/FD7E14/pause--v1.png" alt="pause--v1"/>';
-                }
-                if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen().catch(() => {});
                 }
                 overlay.style.display = 'none';
                 if (hasMedia) showControls();
@@ -543,6 +554,42 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
                 showControls();
             });
 
+            // Alternar Fullscreen e Girar Tela (Horizontal / Vertical)
+            if (btnFullscreenToggle) {
+                btnFullscreenToggle.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    
+                    try {
+                        if (!document.fullscreenElement) {
+                            if (document.documentElement.requestFullscreen) {
+                                await document.documentElement.requestFullscreen();
+                            } else if (document.documentElement.webkitRequestFullscreen) {
+                                await document.documentElement.webkitRequestFullscreen();
+                            }
+
+                            // Tenta forçar a rotação para paisagem (horizontal)
+                            if (screen.orientation && screen.orientation.lock) {
+                                await screen.orientation.lock('landscape').catch(() => {});
+                            }
+                        } else {
+                            if (document.exitFullscreen) {
+                                await document.exitFullscreen();
+                            } else if (document.webkitExitFullscreen) {
+                                await document.webkitExitFullscreen();
+                            }
+
+                            if (screen.orientation && screen.orientation.unlock) {
+                                screen.orientation.unlock();
+                            }
+                        }
+                    } catch (err) {
+                        console.log('Erro de Fullscreen/Orientação:', err);
+                    }
+                    
+                    showControls();
+                });
+            }
+
             // Atualiza progresso, contadores e rolagem da letra
             media.addEventListener('timeupdate', () => {
                 if (!isNaN(media.duration) && media.duration > 0) {
@@ -589,7 +636,9 @@ $_SESSION['historico_midias'][$codigo][] = $midia['id'];
                 e.stopPropagation();
                 media.volume = volumeSlider.value;
                 media.muted = volumeSlider.value == 0;
-                btnAudioToggle.innerText = media.muted || volumeSlider.value == 0 ? '🔇' : '🔊';
+                btnAudioToggle.querySelector('img').src = media.muted || volumeSlider.value == 0 
+                    ? 'https://img.icons8.com/fluency-systems-regular/48/FD7E14/mute.png' 
+                    : 'https://img.icons8.com/fluency-systems-regular/48/FD7E14/high-volume.png';
                 showControls();
             });
 

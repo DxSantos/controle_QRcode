@@ -43,6 +43,9 @@ $sql = "SELECT
 $qrcodes = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
+<!-- LIB PARA GERAÇÃO DO QR CODE EM ALTÍSSIMA RESOLUÇÃO -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
 <!-- ESTILOS EXCLUSIVOS DOS BALÕES EXPANDINDOS NO MODAL -->
 <style>
 .balloon-card {
@@ -106,6 +109,9 @@ $qrcodes = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     <div class="row g-4">
         <?php if (count($qrcodes) > 0): ?>
             <?php foreach ($qrcodes as $qr): ?>
+                <?php 
+                    $urlPlayer = "http://" . $_SERVER['HTTP_HOST'] . "/controle_QRcode/sections/player.php?codigo=" . urlencode($qr['codigo_qr']);
+                ?>
                 <div class="col-6 col-sm-4 col-md-3 col-lg-2">
                     <div class="card p-3 shadow-sm text-center border-0 rounded-3 qr-card-hover" 
                          data-bs-toggle="modal" 
@@ -171,11 +177,20 @@ $qrcodes = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
                                 </div>
                             </div>
 
-                            <div class="modal-footer border-0 justify-content-center pt-0">
-                                <a href="midia_QRcodes.php?midiaQR_id=<?= $qr['id'] ?>" class="btn btn-outline-primary px-4">
+                            <div class="modal-footer border-0 justify-content-center pt-0 gap-2">
+                                <!-- BOTÃO DE GERENCIAR MÍDIAS -->
+                                <a href="midia_QRcodes.php?midiaQR_id=<?= $qr['id'] ?>" class="btn btn-outline-primary px-3">
                                     ⚙️ Gerenciar Mídias
                                 </a>
-                                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+
+                                <!-- BOTÃO DE BAIXAR EM ALTÍSSIMA QUALIDADE -->
+                                <button type="button" 
+                                        class="btn btn-outline-success px-3" 
+                                        onclick="baixarQRAltaQualidade('<?= htmlspecialchars($urlPlayer) ?>', 'QRCode_HD_<?= htmlspecialchars($qr['codigo_qr']) ?>')">
+                                    🖨️ Baixar QR (Alta Definição)
+                                </button>
+
+                                <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal">
                                     Fechar
                                 </button>
                             </div>
@@ -192,5 +207,50 @@ $qrcodes = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
 </div>
+
+<!-- DIV OCULTA DENTRO DA QUAL SERÁ RENDERIZADO O QR CODE EM HD -->
+<div id="qrcodeHD" style="display:none;"></div>
+
+<script>
+/**
+ * Renderiza dinamicamente o QR Code em alta resolução (2000x2000 px) e dispara o download do arquivo PNG
+ */
+function baixarQRAltaQualidade(url, nomeArquivo) {
+    const container = document.getElementById("qrcodeHD");
+    container.innerHTML = "";
+
+    // Gera um QR Code temporário na resolução de 2000px em canvas/SVG
+    const qrcode = new QRCode(container, {
+        text: url,
+        width: 2000,
+        height: 2000,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+    });
+
+    // Aguarda o canvas/imagem ser processado para converter e fazer o download
+    setTimeout(() => {
+        const img = container.querySelector("img");
+        const canvas = container.querySelector("canvas");
+
+        let imgURI = "";
+        if (canvas) {
+            imgURI = canvas.toDataURL("image/png");
+        } else if (img) {
+            imgURI = img.src;
+        }
+
+        if (imgURI) {
+            const link = document.createElement("a");
+            link.download = nomeArquivo + ".png";
+            link.href = imgURI;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }, 300);
+}
+</script>
 
 <?php include_once __DIR__ . '/../includes/footer.php'; ?>

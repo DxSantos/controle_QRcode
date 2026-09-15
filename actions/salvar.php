@@ -23,8 +23,9 @@ if (!isset($_FILES['arquivo']) || $_FILES['arquivo']['error'] !== 0) {
     exit;
 }
 
-// Verificar se o QR Code existe e está ativo na tabela midiaQR
-$stmt = $pdo->prepare("SELECT ativo FROM midiaQR WHERE id = ?");
+
+// Verificar se o QR Code existe e está ativo na tabela midiaqr
+$stmt = $pdo->prepare("SELECT ativo FROM midiaqr WHERE id = ?");
 $stmt->execute([$midiaQR_id]);
 $sub = $stmt->fetch();
 

@@ -37,14 +37,14 @@ if (isset($_GET['ok'])) {
 
 // 🔁 ATIVAR / INATIVAR
 if (isset($_GET['inativar'])) {
-    $stmt = $pdo->prepare("UPDATE midiaQR SET ativo=0 WHERE id=?");
+    $stmt = $pdo->prepare("UPDATE midiaqr SET ativo=0 WHERE id=?");
     $stmt->execute([$_GET['inativar']]);
     header("Location: midia_QRcodes.php");
     exit;
 }
 
 if (isset($_GET['ativar'])) {
-    $stmt = $pdo->prepare("UPDATE midiaQR SET ativo=1 WHERE id=?");
+    $stmt = $pdo->prepare("UPDATE midiaqr SET ativo=1 WHERE id=?");
     $stmt->execute([$_GET['ativar']]);
     header("Location: midia_QRcodes.php");
     exit;
@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     // Verificar se o código já existe na tabela renomeada midiaQR
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM midiaQR WHERE codigo_qr=?");
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM midiaqr WHERE codigo_qr=?");
     $stmt->execute([$codigo]);
 
     if ($stmt->fetchColumn() > 0) {
@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     // Inserir na tabela midiaQR
-    $stmt = $pdo->prepare("INSERT INTO midiaQR (codigo_qr, ativo) VALUES (?, 1)");
+    $stmt = $pdo->prepare("INSERT INTO midiaqr (codigo_qr, ativo) VALUES (?, 1)");
     $stmt->execute([$codigo]);
 
     // Caminho da pasta qrcodes na RAIZ do projeto
@@ -80,8 +80,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         mkdir($pasta_qrcodes, 0777, true);
     }
 
-    // Rota web até a View do player
-    $url = "http://localhost/controle_QRcode/sections/player.php?codigo=" . $codigo;
+    // Rota web até a View do player Localhost
+    $protocolo = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
+    $url = $protocolo . $_SERVER['HTTP_HOST'] . "/controle_QRcode/sections/player.php?codigo=" . $codigo;
 
     // Gerar e salvar imagem do QR Code
     $imagem_qr = file_get_contents("https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urlencode($url));
@@ -126,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </thead>
                 <tbody>
                     <?php
-                    $stmt = $pdo->query("SELECT * FROM midiaQR ORDER BY id DESC");
+                    $stmt = $pdo->query("SELECT * FROM midiaqr ORDER BY id DESC");
                     $qrcodes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     if (count($qrcodes) > 0):

@@ -45,7 +45,7 @@ $midiaQR_id = isset($_GET['midiaQR_id']) ? (int)$_GET['midiaQR_id'] : 0;
                         <option value="" disabled <?= $midiaQR_id == 0 ? 'selected' : '' ?>>Selecione um QR Code</option>
 
                         <?php
-                        $stmt = $pdo->query("SELECT * FROM midiaQR WHERE ativo=1 ORDER BY id DESC");
+                        $stmt = $pdo->query("SELECT * FROM midiaqr WHERE ativo=1 ORDER BY id DESC");
                         foreach ($stmt as $s):
                         ?>
                             <option value="<?= $s['id'] ?>" <?= $midiaQR_id == $s['id'] ? 'selected' : '' ?>>

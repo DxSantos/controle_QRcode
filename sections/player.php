@@ -18,7 +18,7 @@ if (empty($codigo)) {
 $stmt = $pdo->prepare("
     SELECT m.*
     FROM midias m
-    JOIN midiaQR s ON s.id = m.midiaQR_id
+    JOIN midiaqr s ON s.id = m.midiaQR_id
     WHERE s.codigo_qr = ? AND s.ativo = 1
 ");
 $stmt->execute([$codigo]);

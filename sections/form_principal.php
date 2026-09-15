@@ -35,16 +35,13 @@ $sql = "SELECT
             SUM(CASE WHEN m.tipo = 'video' THEN 1 ELSE 0 END) AS qtd_video,
             SUM(CASE WHEN m.tipo = 'imagem' THEN 1 ELSE 0 END) AS qtd_imagem,
             COUNT(m.id) AS total_midias
-        FROM midiaQR q
+        FROM midiaqr q
         LEFT JOIN midias m ON m.midiaQR_id = q.id
         GROUP BY q.id, q.codigo_qr, q.ativo
         ORDER BY q.id DESC";
 
 $qrcodes = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 ?>
-
-<!-- LIB PARA GERAÇÃO DO QR CODE EM ALTÍSSIMA RESOLUÇÃO -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <!-- ESTILOS EXCLUSIVOS DOS BALÕES EXPANDINDOS NO MODAL -->
 <style>
@@ -110,7 +107,7 @@ $qrcodes = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
         <?php if (count($qrcodes) > 0): ?>
             <?php foreach ($qrcodes as $qr): ?>
                 <?php 
-                    $urlPlayer = "http://" . $_SERVER['HTTP_HOST'] . "/controle_QRcode/sections/player.php?codigo=" . urlencode($qr['codigo_qr']);
+                    $caminhoImagemQR = "../qrcodes/" . htmlspecialchars($qr['codigo_qr']) . ".png";
                 ?>
                 <div class="col-6 col-sm-4 col-md-3 col-lg-2">
                     <div class="card p-3 shadow-sm text-center border-0 rounded-3 qr-card-hover" 
@@ -118,7 +115,7 @@ $qrcodes = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
                          data-bs-target="#modalQR<?= $qr['id'] ?>">
                         
                         <!-- Imagem do QR Code -->
-                        <img src="../qrcodes/<?= htmlspecialchars($qr['codigo_qr']) ?>.png" 
+                        <img src="<?= $caminhoImagemQR ?>" 
                              alt="QR Code <?= htmlspecialchars($qr['codigo_qr']) ?>" 
                              class="img-fluid rounded mb-2 border p-1" 
                              style="max-height: 120px; object-fit: contain;">
@@ -183,10 +180,10 @@ $qrcodes = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
                                     ⚙️ Gerenciar Mídias
                                 </a>
 
-                                <!-- BOTÃO DE BAIXAR EM ALTÍSSIMA QUALIDADE -->
+                                <!-- BOTÃO DE BAIXAR O QR EXACTO EM ALTA DEFINIÇÃO -->
                                 <button type="button" 
                                         class="btn btn-outline-success px-3" 
-                                        onclick="baixarQRAltaQualidade('<?= htmlspecialchars($urlPlayer) ?>', 'QRCode_HD_<?= htmlspecialchars($qr['codigo_qr']) ?>')">
+                                        onclick="baixarQROriginalHD('<?= $caminhoImagemQR ?>', 'QRCode_HD_<?= htmlspecialchars($qr['codigo_qr']) ?>')">
                                     🖨️ Baixar QR (Alta Definição)
                                 </button>
 
@@ -208,48 +205,37 @@ $qrcodes = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 
 </div>
 
-<!-- DIV OCULTA DENTRO DA QUAL SERÁ RENDERIZADO O QR CODE EM HD -->
-<div id="qrcodeHD" style="display:none;"></div>
-
 <script>
 /**
- * Renderiza dinamicamente o QR Code em alta resolução (2000x2000 px) e dispara o download do arquivo PNG
+ * Carrega a imagem original existente na pasta /qrcodes/ e a amplia para 2000x2000px sem suavização (pixel-perfect)
  */
-function baixarQRAltaQualidade(url, nomeArquivo) {
-    const container = document.getElementById("qrcodeHD");
-    container.innerHTML = "";
+function baixarQROriginalHD(caminhoImagem, nomeArquivo) {
+    const imgOriginal = new Image();
+    imgOriginal.crossOrigin = "Anonymous";
+    imgOriginal.src = caminhoImagem;
 
-    // Gera um QR Code temporário na resolução de 2000px em canvas/SVG
-    const qrcode = new QRCode(container, {
-        text: url,
-        width: 2000,
-        height: 2000,
-        colorDark : "#000000",
-        colorLight : "#ffffff",
-        correctLevel : QRCode.CorrectLevel.H
-    });
+    imgOriginal.onload = function () {
+        const canvas = document.createElement("canvas");
+        canvas.width = 2000;
+        canvas.height = 2000;
 
-    // Aguarda o canvas/imagem ser processado para converter e fazer o download
-    setTimeout(() => {
-        const img = container.querySelector("img");
-        const canvas = container.querySelector("canvas");
+        const ctx = canvas.getContext("2d");
+        // Desativa a suavização de imagem para manter os cantos dos blocos do QR Code perfeitamente nítidos
+        ctx.imageSmoothingEnabled = false;
+        ctx.webkitImageSmoothingEnabled = false;
+        ctx.mozImageSmoothingEnabled = false;
 
-        let imgURI = "";
-        if (canvas) {
-            imgURI = canvas.toDataURL("image/png");
-        } else if (img) {
-            imgURI = img.src;
-        }
+        // Desenha a imagem original preenchendo o canvas de 2000x2000 px
+        ctx.drawImage(imgOriginal, 0, 0, 2000, 2000);
 
-        if (imgURI) {
-            const link = document.createElement("a");
-            link.download = nomeArquivo + ".png";
-            link.href = imgURI;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-    }, 300);
+        // Dispara o download da imagem em PNG de alta definição
+        const link = document.createElement("a");
+        link.download = nomeArquivo + ".png";
+        link.href = canvas.toDataURL("image/png");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 }
 </script>
 
